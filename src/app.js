@@ -2,6 +2,7 @@ const OpenAI = require('openai');
 const core = require('openai/core');
 const express = require('express');
 const axios = require('axios');
+const cors = require('cors');
 require('dotenv').config({ path: '.env' });
 
 const { OPENAI_API_KEY, ASSISTANT_ID, ETHERSCAN_API_KEY } = process.env;
@@ -11,11 +12,16 @@ const openai = new OpenAI({
 });
 
 const app = express();
+app.use(cors());
 app.use(express.json()); // Middleware to parse JSON bodies
 
 //=========================================================
 //============== ROUTE SERVER =============================
 //=========================================================
+
+app.get('/test', async (req, res) => {
+  res.json({ response: 'this is test message from api' });
+});
 
 // Open a new thread
 app.get('/thread', async (req, res) => {
@@ -200,29 +206,20 @@ async function checkingStatus(res, threadId, runId) {
 async function getContractSourceCodeResult(address) {
   console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
   console.log(`input query: ${address}`);
-  //   contractAddress = '0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413'
-
-  // extractEthereumContractAddress({"address":"0x514910771AF9Ca656af840dff83E8264EcF986CA"})
 
   const baseUrl = 'https://api.etherscan.io/api';
-
   const params = new URLSearchParams({
     module: 'contract',
     action: 'getsourcecode',
     address: address,
     apikey: ETHERSCAN_API_KEY,
   });
-
   const response = await axios.get(`${baseUrl}?${params}`);
-  // console.log('Contract Source Code:', response.data);
-
-  // 일단 그냥 첫번쨰거만 ㄱㄱ
+  // if !verified { ... 만약에 Verfied 안된거면 바로 이상하다고 response
 
   console.log(response.data.status);
   console.log(response.data.message);
   console.log(response.data.result[0].ContractName);
-  // console.log(result.result[0].SourceCode);
-  // console.log(result.result[0].ABI);
   return response.data.result[0].SourceCode;
 }
 

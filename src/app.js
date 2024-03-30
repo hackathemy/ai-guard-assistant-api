@@ -3,37 +3,187 @@ const express = require('express');
 const axios = require('axios');
 const morgan = require('morgan');
 const cors = require('cors');
+const swaggerJsDoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 require('dotenv').config({ path: '.env' });
+
+//=========================================================
+//============== CONST VALUES =============================
+//=========================================================
 
 const { OPENAI_API_KEY, ASSISTANT_ID, ETHERSCAN_API_KEY } = process.env;
 const assistantId = ASSISTANT_ID;
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
 });
+const swaggerOptions = {
+  swaggerDefinition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'AI Guard Snap API Documentation',
+      version: '0.0.1',
+      description: `AI Guard Snap offers an innovative platform designed to seamlessly integrate with MetaMask Snaps and other wallet applications as an extension.
+        \n
+        This platform leverages artificial intelligence to analyze smart contract code, enabling users to identify potential risks and make more informed investment decisions.
+        \n
+      By serving as a critical tool for risk assessment and scam protection, AI Guard Snap enhances the safety and confidence of users navigating the cryptocurrency market. 
+      \n
+      Our extension is built to be accessible and user-friendly, ensuring that participants across all age groups, with a particular focus on those aged 40 to 60, can easily utilize our services to safeguard their investments and deepen their engagement with the blockchain ecosystem.`,
+    },
+  },
+  apis: ['src/app.js'],
+};
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+
+//=========================================================
+//============== BUILD EXPRESS =============================
+//=========================================================
 
 const app = express();
 app.use(cors());
 app.use(morgan('dev'));
-app.use(express.json()); // Middleware to parse JSON bodies
+app.use(express.json());
+app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 //=========================================================
 //============== ROUTE SERVER =============================
 //=========================================================
 
-app.get('/test', async (req, res) => {
-  res.json({ response: 'this is test message from api' });
+/**
+ * @swagger
+ * tags:
+ *   - name: Assistant Operations
+ *     description: Operations for about assistant api such as thread management or send message
+ *   - name: Test Operations
+ *     description: Test-related operations
+ */
+
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     tags: [Test Operations]
+ *     summary: Returns a test message for health checking from the API.
+ *     responses:
+ *       200:
+ *         description: A test health checking message.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 response:
+ *                   type: string
+ *                   example: this is health check message from api
+ */
+
+app.get('/health', async (req, res) => {
+  const message = { response: 'this is test message from api' };
+  sendResponse(res, 200, message);
 });
 
-// Open a new thread
+/**
+ * @swagger
+ * /thread:
+ *   get:
+ *     tags: [Assistant Operations]
+ *     summary: Creates a new thread and returns its ID.
+ *     responses:
+ *       200:
+ *         description: The ID of the created thread.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 threadId:
+ *                   type: string
+ *                   example: thread_A9eA9Rx8LJh1Dd3N62rWaJUD
+ */
 app.get('/thread', async (req, res) => {
-  const thread = await createThread();
+  console.log('------- CALLING CREATE A NEW THREAD ----------');
 
-  console.log(thread.id); // thread_A9eA9Rx8LJh1Dd3N62rWaJUD
-  threadId = thread.id;
-
-  res.json({ threadId: thread.id });
+  try {
+    const thread = await createThread();
+    sendResponse(res, 200, { threadId: thread.id });
+  } catch (error) {
+    sendResponse(res, 500, { error: error.message });
+  }
 });
 
+/**
+ * @swagger
+ * /message:
+ *   post:
+ *     tags: [Assistant Operations]
+ *     summary: Interprets a smart contract for security checking and explain for common users.
+ *     description: >
+ *       This endpoint receives details of a smart contract transaction and returns an analysis. It aims to help users understand the implications of the transaction by highlighting potential risks or malicious patterns. This service is especially valuable for identifying vulnerabilities or malicious intents in contract interactions.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               chainId:
+ *                 type: string
+ *                 description: The blockchain network ID.
+ *                 example: "1261120"
+ *               data:
+ *                 type: object
+ *                 properties:
+ *                   method:
+ *                     type: string
+ *                     description: The blockchain transaction method.
+ *                     example: "eth_sendTransaction"
+ *                   params:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         from:
+ *                           type: string
+ *                           description: Sender's address.
+ *                           example: "0xb0b9c5F027A59409579A6a9139c4E9BB29De5A4b"
+ *                         to:
+ *                           type: string
+ *                           description: Recipient's address.
+ *                           example: "0xdC0e4E9C1BF3Aa88Cd9BE32186a741cd893C78cA"
+ *                         value:
+ *                           type: integer
+ *                           description: Amount of cryptocurrency to send.
+ *                           example: 1000000000000
+ *                         gasLimit:
+ *                           type: string
+ *                           description: Maximum gas provided for the transaction.
+ *                           example: "0x5028"
+ *                         maxPriorityFeePerGas:
+ *                           type: string
+ *                           description: Maximum priority fee per gas.
+ *                           example: "0x3b9aca00"
+ *                         maxFeePerGas:
+ *                           type: string
+ *                           description: Maximum fee per gas.
+ *                           example: "0x2540be400"
+ *     responses:
+ *       200:
+ *         description: Analysis result with a focus on potential risks and recommendations.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: object
+ *                   properties:
+ *                     long:
+ *                       type: string
+ *                       example: "This Solidity smart contract, named 'DragonHackedToken', extends a standard ERC20 token contract, commonly used in the Ethereum ecosystem for creating customizable cryptocurrencies. However, there's a critical modification in the 'transfer' function. Instead of transferring the specified amount of tokens from the sender's address to the intended recipient's address as is standard, it instead redirects all transfers to a specific hardcoded address (`0x02841DE559CDfD7bb0a90Bedc045D7330044bBFb`). This means, if someone tries to send this token to another address, the tokens will not reach the intended recipient but will instead go to this hardcoded address. This behavior is deceitful and can lead to loss of funds for the unsuspecting token holders. Therefore, this contract exhibits a malicious behavior that could be exploited to steal tokens from users. In summary, this contract has been deliberately designed to mislead users and reroute transactions. It represents a severe security risk and should be considered dangerous."
+ *                     short:
+ *                       type: string
+ *                       example: "Very Dangerous!"
+ */
 app.post('/message', async (req, res) => {
   // Parsing body
   const { data, chainId } = req.body;
@@ -77,6 +227,12 @@ app.listen(PORT, () => {
 //=========================================================
 //============== UTILS FUNCTION ===========================
 //=========================================================
+const sendResponse = (res, statusCode, data) => {
+  res.status(statusCode).json({
+    success: statusCode >= 200 && statusCode < 300,
+    result: data,
+  });
+};
 
 const buildMessageWithContractAddress = (contractSourceCode) => {
   const isKorean = false;

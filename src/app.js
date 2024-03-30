@@ -212,7 +212,7 @@ async function checkingStatus(res, threadId, runId) {
       const message = JSON.parse(tool_calls[0].function.arguments);
       console.log('response message: ');
       console.log(message);
-      return res.json({ message });
+      return res.json(message);
     }
   }
 }

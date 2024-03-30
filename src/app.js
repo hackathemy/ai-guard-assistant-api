@@ -1,7 +1,7 @@
 const OpenAI = require('openai');
-const core = require('openai/core');
 const express = require('express');
 const axios = require('axios');
+const morgan = require('morgan');
 const cors = require('cors');
 require('dotenv').config({ path: '.env' });
 
@@ -13,6 +13,7 @@ const openai = new OpenAI({
 
 const app = express();
 app.use(cors());
+app.use(morgan('dev'));
 app.use(express.json()); // Middleware to parse JSON bodies
 
 //=========================================================
@@ -50,7 +51,7 @@ app.post('/message', async (req, res) => {
     threadId,
     buildMessageWithContractAddress(contractSourceCode)
   ).then((message) => {
-    console.log(message);
+    // console.log(message);
 
     // Run the assistant
     runAssistant(threadId).then((run) => {
@@ -78,20 +79,37 @@ app.listen(PORT, () => {
 //=========================================================
 
 const buildMessageWithContractAddress = (contractSourceCode) => {
-  return `
-  이 solidity 컨트랙트를 해석해서 일반 사람들이 이해할 수 있는 말로 풀어서 설명해줘. 
+  const isKorean = false;
+  if (isKorean) {
+    return `
+    이 solidity 컨트랙트를 해석해서 일반 사람들이 이해할 수 있는 말로 풀어서 설명해줘. 
+    
+    너가 해석할 컨트랙트 소스코드는 다음과 같아
+    
+    '''solidity
+    ${contractSourceCode}
+    '''
   
-  너가 해석할 컨트랙트 소스코드는 다음과 같아
-  
-  '''solidity
-  ${contractSourceCode}
-  '''
+    20자 이내로 위험한지 안 위험한지 잘 말해봐!!!
+    `;
+  } else {
+    return `
+    Interpret this Solidity contract into layman's terms so that ordinary people can understand it.
 
-  20자 이내로 위험한지 안 위험한지 잘 말해봐!!!
+    The contract source code you will interpret is as follows:
+    
+    '''solidity
+    ${contractSourceCode}
+    '''
+    
+    In 20 characters or less, tell me if it's dangerous or not!
   `;
+  }
 };
 
 const handleGetContractAddressByMethod = (data) => {
+  console.log('------- HANDLER EXTRACT CONTRACT ADDRESS BY METHOD ----------');
+
   const method = data.method;
   const param = data.params[0];
   switch (method) {
@@ -107,6 +125,7 @@ const handleGetContractAddressByMethod = (data) => {
 };
 
 const handleGetContractSourceCode = async (data, chainId) => {
+  console.log('------- CALLING CONTRACT SOURCECODE BY EXTERNAL API ----------');
   const contractAddress = handleGetContractAddressByMethod(data);
 
   switch (chainId) {
@@ -156,34 +175,16 @@ async function runAssistant(threadId) {
     // Make sure to not overwrite the original instruction, unless you want to
   });
 
-  console.log(response);
+  // console.log(response);
 
   return response;
 }
 
 async function checkingStatus(res, threadId, runId) {
   const runObject = await openai.beta.threads.runs.retrieve(threadId, runId);
-
   const status = runObject.status;
-  console.log(runObject);
+
   console.log('Current status: ' + status);
-
-  // + Addition for function calling
-  if (status === 'requires_action') {
-    console.log('requires_action.. looking for a function');
-
-    if (runObject.required_action.type === 'submit_tool_outputs') {
-      console.log('submit tool outputs ... ');
-      const tool_calls = await runObject.required_action.submit_tool_outputs
-        .tool_calls;
-
-      // Can be choose with conditional, if you have multiple function
-      const parsedArgs = JSON.parse(tool_calls[0].function.arguments);
-
-      console.log(parsedArgs);
-      return res.json(parsedArgs);
-    }
-  }
 
   if (status == 'completed') {
     clearInterval(pollingInterval);
@@ -197,6 +198,23 @@ async function checkingStatus(res, threadId, runId) {
 
     return res.json({ messages });
   }
+
+  // + Addition for function calling
+  if (status === 'requires_action') {
+    clearInterval(pollingInterval);
+    // console.log('requires_action.. looking for a function');
+    if (runObject.required_action.type === 'submit_tool_outputs') {
+      // console.log('submit tool outputs ... ');
+      const tool_calls = await runObject.required_action.submit_tool_outputs
+        .tool_calls;
+
+      // Can be choose with conditional, if you have multiple function
+      const message = JSON.parse(tool_calls[0].function.arguments);
+      console.log('response message: ');
+      console.log(message);
+      return res.json({ message });
+    }
+  }
 }
 
 //=========================================================
@@ -205,7 +223,6 @@ async function checkingStatus(res, threadId, runId) {
 
 async function getContractSourceCodeResult(address) {
   console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
-  console.log(`input query: ${address}`);
 
   const baseUrl = 'https://api.etherscan.io/api';
   const params = new URLSearchParams({
@@ -217,25 +234,16 @@ async function getContractSourceCodeResult(address) {
   const response = await axios.get(`${baseUrl}?${params}`);
   // if !verified { ... 만약에 Verfied 안된거면 바로 이상하다고 response
 
-  console.log(response.data.status);
-  console.log(response.data.message);
-  console.log(response.data.result[0].ContractName);
   return response.data.result[0].SourceCode;
 }
 
 async function getContractSourceCodeResultForZKAstar(address) {
   console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
-  console.log(`input query: ${address}`);
 
   const baseUrl = `https://zkatana.blockscout.com/api?module=contract&action=getsourcecode&address=${address}`;
   const response = await axios.get(baseUrl);
 
   // if !verified { ... 만약에 Verfied 안된거면 바로 이상하다고 response
 
-  console.log(response.data.status);
-  console.log(response.data.message);
-  console.log(response.data.result[0].ContractName);
-  // console.log(result.result[0].SourceCode);
-  // console.log(result.result[0].ABI);
   return response.data.result[0].SourceCode;
 }

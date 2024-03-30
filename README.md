@@ -15,6 +15,9 @@ npm install
 
 # run
 npm run start
+
+# dev mode
+npm run dev
 ```
 
 ## Example Call

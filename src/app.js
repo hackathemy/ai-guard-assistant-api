@@ -22,13 +22,13 @@ const swaggerOptions = {
     info: {
       title: 'AI Guard Snap API Documentation',
       version: '0.0.1',
-      description: `AI Guard Snap offers an innovative platform designed to seamlessly integrate with MetaMask Snaps and other wallet applications as an extension.
-        \n
-        This platform leverages artificial intelligence to analyze smart contract code, enabling users to identify potential risks and make more informed investment decisions.
-        \n
-      By serving as a critical tool for risk assessment and scam protection, AI Guard Snap enhances the safety and confidence of users navigating the cryptocurrency market. 
-      \n
-      Our extension is built to be accessible and user-friendly, ensuring that participants across all age groups, with a particular focus on those aged 40 to 60, can easily utilize our services to safeguard their investments and deepen their engagement with the blockchain ecosystem.`,
+      description: `
+    \n  
+    Our platform not only introduces AI Guard Snap, an innovative tool that leverages artificial intelligence to analyze smart contract codes, but we also expand our capabilities through our Public API service.
+    \n
+    Various wallet services and platforms of different natures can integrate this functionality via API calls, enabling them to check the safety of smart contracts and explain their terms to the average user as needed.
+    \n
+    Through this, we aim to lower the entry barriers for Web3 beginners across a multitude of environments.`,
     },
   },
   apis: ['src/app.js'],
@@ -249,6 +249,17 @@ app.post('/message', async (req, res) => {
       }, 10000);
     });
   });
+});
+
+/**
+ * @swagger
+ * /create-custom-assistant:
+ *   post:
+ *     tags: [Assistant Operations]
+ *     summary: Create a new assistant for wallet provider and other platforms, through this feature they could make a response data format which each want to get
+ */
+app.post('/create-custom-assistant', (req, res) => {
+  sendResponse(res, 500, { error: 'not supported yet' });
 });
 
 //=========================================================

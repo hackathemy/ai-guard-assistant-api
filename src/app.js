@@ -84,6 +84,42 @@ app.get('/health', async (req, res) => {
 
 /**
  * @swagger
+ * /supported-chains:
+ *   get:
+ *     tags: [Assistant Operations]
+ *     summary: Retrieves a list of supported blockchain names for AI Guard.
+ *     responses:
+ *       200:
+ *         description: Returns an array of strings, each representing a supported blockchain by the API. This endpoint is useful for clients that need to display or process the range of blockchain networks supported.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 result:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["injective", "zk-Astar", "ethereum", "fhenix", "neon"]
+ */
+
+app.get('/supported-chains', async (req, res) => {
+  const supportedChains = [
+    'injective',
+    'zk-Astar',
+    'ethereum',
+    'fhenix',
+    'neon',
+  ];
+
+  sendResponse(res, 200, supportedChains);
+});
+
+/**
+ * @swagger
  * /thread:
  *   get:
  *     tags: [Assistant Operations]

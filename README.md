@@ -3,6 +3,23 @@
 ## How to use
 
 ```bash
+# clone this repo
+git clone
+
+# setup env
+cp .env.sample .env
+vi .env
+
+# install node_modules
+npm install
+
+# run
+npm run start
+```
+
+## Example Call
+
+```bash
 # call assistant api
 curl --location 'http://localhost:3000/message' \
 --header 'Content-Type: application/json' \

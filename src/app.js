@@ -245,7 +245,7 @@ app.post('/message', async (req, res) => {
 
       // Check the status
       pollingInterval = setInterval(() => {
-        checkingStatus(res, threadId, runId);
+        checkingStatus(res, threadId, runId, chainId);
       }, 10000);
     });
   });
@@ -337,10 +337,20 @@ const handleGetContractSourceCode = async (data, chainId) => {
       console.log('this chain id : zkAstar');
       return await getContractSourceCodeResultForZKAstar(contractAddress);
 
-    // sepolioa
+    // ethereum sepolioa
     case '11155111':
       console.log('this chain id : ethereum sepolia');
-      return await getContractSourceCodeResult(contractAddress);
+      return await getContractSourceCodeResultForEthereum(contractAddress);
+
+    // inEVM
+    case '2424':
+      console.log('this chain id : inEVM');
+      return await getContractSourceCodeResultForinEVM(contractAddress);
+
+    // neon
+    case '245022926':
+      console.log('this chain id : neon');
+      return await getContractSourceCodeResultForNeon(contractAddress);
 
     // etc
     default:
@@ -383,7 +393,7 @@ async function runAssistant(threadId) {
   return response;
 }
 
-async function checkingStatus(res, threadId, runId) {
+async function checkingStatus(res, threadId, runId, chainId) {
   const runObject = await openai.beta.threads.runs.retrieve(threadId, runId);
   const status = runObject.status;
 
@@ -413,9 +423,12 @@ async function checkingStatus(res, threadId, runId) {
 
       // Can be choose with conditional, if you have multiple function
       const message = JSON.parse(tool_calls[0].function.arguments);
+      message.chain_id = chainId;
+
       console.log('response message: ');
       console.log(message);
-      return res.json(message);
+
+      sendResponse(res, 200, message);
     }
   }
 }
@@ -424,9 +437,8 @@ async function checkingStatus(res, threadId, runId) {
 //============== SOURCE CODE API ==========================
 //=========================================================
 
-async function getContractSourceCodeResult(address) {
+async function getContractSourceCodeResultForEthereum(address) {
   console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
-
   const baseUrl = 'https://api.etherscan.io/api';
   const params = new URLSearchParams({
     module: 'contract',
@@ -435,18 +447,26 @@ async function getContractSourceCodeResult(address) {
     apikey: ETHERSCAN_API_KEY,
   });
   const response = await axios.get(`${baseUrl}?${params}`);
-  // if !verified { ... 만약에 Verfied 안된거면 바로 이상하다고 response
-
   return response.data.result[0].SourceCode;
 }
 
 async function getContractSourceCodeResultForZKAstar(address) {
   console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
-
   const baseUrl = `https://zkatana.blockscout.com/api?module=contract&action=getsourcecode&address=${address}`;
   const response = await axios.get(baseUrl);
+  return response.data.result[0].SourceCode;
+}
 
-  // if !verified { ... 만약에 Verfied 안된거면 바로 이상하다고 response
+async function getContractSourceCodeResultForinEVM(address) {
+  console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
+  const baseUrl = `https://testnet.explorer.inevm.com/api?module=contract&action=getsourcecode&address=${address}`;
+  const response = await axios.get(baseUrl);
+  return response.data.result[0].SourceCode;
+}
 
+async function getContractSourceCodeResultForNeon(address) {
+  console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
+  const baseUrl = `https://neon-devnet.blockscout.com/api?module=contract&action=getsourcecode&address=${address}`;
+  const response = await axios.get(baseUrl);
   return response.data.result[0].SourceCode;
 }

@@ -359,6 +359,32 @@ const handleGetContractSourceCode = async (data, chainId) => {
   }
 };
 
+const handleGetChainName = (chainId) => {
+  console.log('------- CALLING CONTRACT SOURCECODE BY EXTERNAL API ----------');
+
+  switch (chainId) {
+    // zk Astart
+    case '1261120':
+      return 'zk-astar';
+
+    // ethereum sepolioa
+    case '11155111':
+      return 'ethereum';
+
+    // inEVM
+    case '2424':
+      return 'injective';
+
+    // neon
+    case '245022926':
+      return 'neon';
+
+    // etc
+    default:
+      return 'unknown-chain';
+  }
+};
+
 //=========================================================
 //============== OPENAI FUNCTIONS =========================
 //=========================================================
@@ -423,7 +449,7 @@ async function checkingStatus(res, threadId, runId, chainId) {
 
       // Can be choose with conditional, if you have multiple function
       const message = JSON.parse(tool_calls[0].function.arguments);
-      message.chain_id = chainId;
+      message.chain = handleGetChainName(chainId);
 
       console.log('response message: ');
       console.log(message);

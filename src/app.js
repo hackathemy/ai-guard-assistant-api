@@ -358,9 +358,14 @@ const handleGetContractSourceCode = async (data, chainId) => {
       return await getContractSourceCodeResultForfhenix(contractAddress);
 
     // celo
-    case '42069':
+    case '44787':
       console.log('this chain id : celo');
       return await getContractSourceCodeResultForCelo(contractAddress);
+
+    // optimism
+    case '11155420':
+      console.log('this chain id : optimism');
+      return await getContractSourceCodeResultForOptimism(contractAddress);
 
     // etc
     default:
@@ -394,6 +399,20 @@ const handleGetChainName = (chainId) => {
       // https://faucet.fhenix.zone/
       return 'fhenix';
 
+    // celo
+    case '44787':
+      // https://faucet.celo.org/alfajores
+      return 'celo';
+
+    // optimism
+    case '11155420':
+      // https://chainlist.org/chain/11155420
+      return 'optimism';
+
+    // arbitrum
+    case '44787':
+      // https://faucet.celo.org/alfajores
+      return 'celo';
     // celo
     case '44787':
       // https://faucet.celo.org/alfajores
@@ -530,3 +549,24 @@ async function getContractSourceCodeResultForCelo(address) {
   const response = await axios.get(baseUrl);
   return response.data.result[0].SourceCode;
 }
+
+async function getContractSourceCodeResultForOptimism(address) {
+  console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
+  const baseUrl = `https://optimism-sepolia.blockscout.com/api/?module=contract&action=getsourcecode&address=${address}`;
+  const response = await axios.get(baseUrl);
+  return response.data.result[0].SourceCode;
+}
+
+// async function getContractSourceCodeResultForArbitrum(address) {
+//   console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
+//   const baseUrl = `https://explorer.celo.org/alfajores/api?module=contract&action=getsourcecode&address=${address}`;
+//   const response = await axios.get(baseUrl);
+//   return response.data.result[0].SourceCode;
+// }
+
+// async function getContractSourceCodeResultForBase(address) {
+//   console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
+//   const baseUrl = `https://explorer.celo.org/alfajores/api?module=contract&action=getsourcecode&address=${address}`;
+//   const response = await axios.get(baseUrl);
+//   return response.data.result[0].SourceCode;
+// }

@@ -109,7 +109,7 @@ app.get('/health', async (req, res) => {
 app.get('/supported-chains', async (req, res) => {
   const supportedChains = [
     'injective',
-    'zk-Astar',
+    'zk-astar',
     'ethereum',
     'fhenix',
     'neon',
@@ -352,6 +352,16 @@ const handleGetContractSourceCode = async (data, chainId) => {
       console.log('this chain id : neon');
       return await getContractSourceCodeResultForNeon(contractAddress);
 
+    // fhenix
+    case '42069':
+      console.log('this chain id : fhenix');
+      return await getContractSourceCodeResultForfhenix(contractAddress);
+
+    // celo
+    case '42069':
+      console.log('this chain id : celo');
+      return await getContractSourceCodeResultForCelo(contractAddress);
+
     // etc
     default:
       console.log('this chain is not supported!');
@@ -378,6 +388,16 @@ const handleGetChainName = (chainId) => {
     // neon
     case '245022926':
       return 'neon';
+
+    // fhenix
+    case '42069':
+      // https://faucet.fhenix.zone/
+      return 'fhenix';
+
+    // celo
+    case '44787':
+      // https://faucet.celo.org/alfajores
+      return 'celo';
 
     // etc
     default:
@@ -493,6 +513,20 @@ async function getContractSourceCodeResultForinEVM(address) {
 async function getContractSourceCodeResultForNeon(address) {
   console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
   const baseUrl = `https://neon-devnet.blockscout.com/api?module=contract&action=getsourcecode&address=${address}`;
+  const response = await axios.get(baseUrl);
+  return response.data.result[0].SourceCode;
+}
+
+async function getContractSourceCodeResultForfhenix(address) {
+  console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
+  const baseUrl = `https://explorer.testnet.fhenix.zone/api?module=contract&action=getsourcecode&address=${address}`;
+  const response = await axios.get(baseUrl);
+  return response.data.result[0].SourceCode;
+}
+
+async function getContractSourceCodeResultForCelo(address) {
+  console.log('------- CALLING AN EXTERNAL ETHERSCAN API ----------');
+  const baseUrl = `https://explorer.celo.org/alfajores/api?module=contract&action=getsourcecode&address=${address}`;
   const response = await axios.get(baseUrl);
   return response.data.result[0].SourceCode;
 }
